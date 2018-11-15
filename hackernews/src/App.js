@@ -7,24 +7,8 @@ const PATH_BASE = "https://hn.algolia.com/api/v1";
 const PATH_SEARCH = "/search";
 const PARAM_SEARCH = "query=";
 
-const list = [
-  {
-    title: "React",
-    url: "https://reactjs.org/",
-    author: "Jordan Walke",
-    num_comments: 3,
-    points: 4,
-    objectID: 0
-  },
-  {
-    title: "Redux",
-    url: "https://redux.js.org/",
-    author: "Dan Abramov, Andrew Clark",
-    num_comments: 2,
-    points: 5,
-    objectID: 1
-  }
-];
+const isSearched = searchTerm => item =>
+  item.title.toLowerCase().includes(searchTerm.toLowerCase());
 
 class App extends Component {
   constructor(props) {
@@ -37,15 +21,6 @@ class App extends Component {
     this.setSearchTopStories = this.setSearchTopStories.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
-  }
-
-  onSearchChange(event) {
-    this.setState({ searchTerm: event.target.value });
-  }
-  onDismiss(id) {
-    const isNotId = item => item.objectID !== id;
-    const updatedList = this.state.list.filter(isNotId);
-    this.setState({ list: updatedList });
   }
 
   setSearchTopStories(result) {
@@ -61,9 +36,16 @@ class App extends Component {
       .catch(error => error);
   }
 
-  
-    const isSearched = searchTerm => item =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase());
+  onSearchChange(event) {
+    this.setState({ searchTerm: event.target.value });
+  }
+  onDismiss(id) {
+    const isNotId = item => item.objectID !== id;
+    const updatedHits = this.state.result.hits.filter(isNotId);
+    this.setState({
+      result: { ...this.state.result, hits: updatedHits }
+    });
+  }
 
   render() {
     const { searchTerm, result } = this.state;
@@ -78,7 +60,11 @@ class App extends Component {
             Search
           </Search>
         </div>
-        <Table list={list} pattern={searchTerm} onDismiss={this.onDismiss} />
+        <Table
+          list={result.hits}
+          pattern={searchTerm}
+          onDismiss={this.onDismiss}
+        />
       </div>
     );
   }
@@ -130,11 +116,3 @@ class Button extends Component {
 }
 
 export default App;
-
-
-
-
-
-
-
-
