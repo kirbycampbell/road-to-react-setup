@@ -19,7 +19,8 @@ class App extends Component {
       results: null,
       searchKey: "",
       searchTerm: DEFAULT_QUERY,
-      error: null
+      error: null,
+      isLoading: false
     };
     this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
     this.setSearchTopStories = this.setSearchTopStories.bind(this);
@@ -41,11 +42,13 @@ class App extends Component {
       results && results[searchKey] ? results[searchKey].hits : [];
     const updatedHits = [...oldHits, ...hits];
     this.setState({
-      results: { ...results, [searchKey]: { hits: updatedHits, page } }
+      results: { ...results, [searchKey]: { hits: updatedHits, page } },
+      isLoading: false
     });
   }
 
   fetchSearchTopStories(searchTerm, page = 0) {
+    this.setState({ isLoading: true });
     axios(
       `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`
     )
@@ -84,7 +87,7 @@ class App extends Component {
   }
 
   render() {
-    const { searchTerm, results, searchKey, error } = this.state;
+    const { searchTerm, results, searchKey, error, isLoading } = this.state;
     const page =
       (results && results[searchKey] && results[searchKey].page) || 0;
     const list =
@@ -112,27 +115,47 @@ class App extends Component {
         )}
         <Table list={list} onDismiss={this.onDismiss} />
         <div className="interactions">
-          <Button
+          <ButtonWithLoading
+            isLoading={isLoading}
             onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}
           >
             More
-          </Button>
+          </ButtonWithLoading>
         </div>
       </div>
     );
   }
 }
 
-const Search = ({ value, onChange, onSubmit, children }) => (
-  <form onSubmit={onSubmit}>
-    {children} <input type="text" value={value} onChange={onChange} />
-    <button type="submit">{children}</button>
-  </form>
-);
+class Search extends Component {
+  componentDidMount() {
+    if (this.input) {
+      this.input.focus();
+    }
+  }
+  render() {
+    const { value, onChange, onSubmit, children } = this.props;
+    let input;
+    return (
+      <form onSubmit={onSubmit}>
+        <input
+          type="text"
+          value={value}
+          onChange={onChange}
+          // THIS HELPS reference the dom element with ref attribute
+          ref={el => (this.input = el)}
+        />
+        <button type="submit">{children}</button>
+      </form>
+    );
+  }
+}
 //Connects in the table const below for style variable
 const midColumn = {
   width: "30%"
 };
+
+const Loading = () => <div>Loading ...</div>;
 
 const Table = ({ list, onDismiss }) => (
   <div className="table">
@@ -169,4 +192,10 @@ class Button extends Component {
   }
 }
 
+const withEnhancement = Component => props => <Component {...props} />;
+
+const withLoading = Component => ({ isLoading, ...rest }) =>
+  isLoading ? <Loading /> : <Component {...rest} />;
+
+const ButtonWithLoading = withLoading(Button);
 export default App;
